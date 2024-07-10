@@ -98,7 +98,7 @@ with col1:
 
 with col2:
     st.write("")
-    tab1, tab2 = st.tabs(["Where - Search Destination", "Locate Us📍"])
+    tab1, tab2, tab3 = st.tabs(["Where - Search Destination", "Locate Us📍","Deep-Dive 🤿"])
 
     with tab1:
         location_selected = st.selectbox("Select the Location", search_country['country'].to_list())
@@ -195,3 +195,47 @@ with col2:
             host_l = main_data[['host_location']].sort_values(by='host_location', ascending=True)
             for j in list(host_l['host_location'].unique()):
                 st.write(f'☀︎ {j}')
+    with tab3:
+        pivoted_views = pd.pivot_table(main_data,index='country',values='price',aggfunc='mean').reset_index()
+        con = st.container(height=430,border=True)
+        with con:
+            st.header('Country Wise Price',divider='rainbow',anchor= 'Country Wise Price')
+            st.area_chart(pivoted_views,x = 'country',y = 'price',use_container_width= True,color='#FF3396')
+        comments = st.expander("See what our customers say about us")
+        with comments:
+            connection_pool = pool.SimpleConnectionPool(1, 20,
+                                            host='localhost',
+                                            user='postgres',
+                                            port="5432",
+                                            database='airbnb',
+                                            password="Shashi@007")   
+            query_c = """select main_data.name as h_name,main_data.country as country, reviewer_data.reviewer_name,left(reviewer_data.date::text,10) as r_date,reviewer_data.review_scores_rating,reviewer_data.comments from reviewer_data left join main_data on reviewer_data._id = main_data._id LIMIT 25"""
+            curr = connection_pool.getconn()
+            with curr.cursor() as curr:
+                curr.execute(query_c)
+                data = curr.fetchall()
+                columns = [desc[0] for desc in curr.description]
+                comme = pd.DataFrame(data,columns=columns)
+            for i in range(len(comme)):
+                colc2_1, colc2_2 = st.columns([10, 3])
+                with colc2_1:
+                    name = comme["reviewer_name"].iloc[i]
+                    f_c_n = name.title()
+                    st.subheader(f'{i+1}) {f_c_n}', divider="rainbow")
+                    d = comme['r_date'].iloc[i]
+                    h_n = comme['h_name'].iloc[i]
+                    c_n = comme['country'].iloc[i]
+                    st.write(f'Posted on: {d}')
+                    b_1 = st.container(height= 40)
+                    with b_1:
+                        st.write(f'{h_n}, {c_n}')
+                with colc2_2:
+                    s_h = comme["comments"].iloc[i]
+                    st.markdown(f"<h3 style='color: gold;'>{comme['review_scores_rating'].iloc[i]} ⭐️</h3>", unsafe_allow_html=True)
+                    comcon = st.container(height = 200,border= True)
+                    with comcon:
+                        st.write(s_h)
+        co3 = st.container(height = 400)
+        with co3:
+            st.video('https://youtu.be/QChu4yeAxhU?si=S6GVBZzAV2ghCyzj',start_time=5,loop=True,autoplay=True,muted = True)       
+
